@@ -34,6 +34,10 @@ export default function ChatWindow() {
         if (chunk.type === "text") {
           fullContent += chunk.content;
           updateLastAssistantMessage(fullContent);
+        } else if (chunk.type === "error") {
+          updateLastAssistantMessage(chunk.content || "Erro no servidor. Tente novamente.");
+          setIsLoading(false);
+          return;
         }
       }
 

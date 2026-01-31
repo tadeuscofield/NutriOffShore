@@ -190,82 +190,92 @@ class AgentService:
 
         messages.append({"role": "user", "content": mensagem})
 
-        for round_num in range(self.max_tool_rounds):
-            collected_text = ""
-            collected_tool_calls = {}
+        try:
+            for round_num in range(self.max_tool_rounds):
+                collected_text = ""
+                collected_tool_calls = {}
 
-            stream = self.client.chat.completions.create(
-                model=self.model,
-                max_tokens=4096,
-                messages=messages,
-                tools=TOOLS,
-                stream=True,
-                extra_headers={
-                    "HTTP-Referer": "https://nutrioffshore.ai",
-                    "X-Title": "NutriOffshore AI Agent",
-                },
-            )
-
-            for chunk in stream:
-                if not chunk.choices:
-                    continue
-                delta = chunk.choices[0].delta
-
-                # Text content
-                if delta.content:
-                    collected_text += delta.content
-                    yield {"type": "text", "content": delta.content}
-
-                # Tool calls (accumulated across chunks)
-                if delta.tool_calls:
-                    for tc_delta in delta.tool_calls:
-                        idx = tc_delta.index
-                        if idx not in collected_tool_calls:
-                            collected_tool_calls[idx] = {
-                                "id": tc_delta.id or "",
-                                "name": "",
-                                "arguments": "",
-                            }
-                        if tc_delta.id:
-                            collected_tool_calls[idx]["id"] = tc_delta.id
-                        if tc_delta.function:
-                            if tc_delta.function.name:
-                                collected_tool_calls[idx]["name"] = tc_delta.function.name
-                            if tc_delta.function.arguments:
-                                collected_tool_calls[idx]["arguments"] += tc_delta.function.arguments
-
-            # Build assistant message
-            msg_dict = {"role": "assistant", "content": collected_text}
-            if collected_tool_calls:
-                msg_dict["tool_calls"] = [
-                    {
-                        "id": tc["id"],
-                        "type": "function",
-                        "function": {
-                            "name": tc["name"],
-                            "arguments": tc["arguments"],
-                        }
-                    }
-                    for tc in collected_tool_calls.values()
-                ]
-            messages.append(msg_dict)
-
-            if not collected_tool_calls:
-                break
-
-            # Execute tools
-            for tc in collected_tool_calls.values():
-                yield {"type": "tool_call", "tool": tc["name"]}
                 try:
-                    func_args = json.loads(tc["arguments"])
-                except json.JSONDecodeError:
-                    func_args = {}
-                result = await self.tools_handler.handle_tool_call(tc["name"], func_args)
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tc["id"],
-                    "content": result if isinstance(result, str) else json.dumps(result, default=str, ensure_ascii=False),
-                })
+                    stream = self.client.chat.completions.create(
+                        model=self.model,
+                        max_tokens=4096,
+                        messages=messages,
+                        tools=TOOLS,
+                        stream=True,
+                        extra_headers={
+                            "HTTP-Referer": "https://nutrioffshore.ai",
+                            "X-Title": "NutriOffshore AI Agent",
+                        },
+                    )
+                except Exception as e:
+                    logger.error(f"Erro na chamada OpenRouter (stream round {round_num}): {e}")
+                    error_msg = "Limite diário atingido. Tente novamente amanhã." if "rate limit" in str(e).lower() or "429" in str(e) else f"Erro ao conectar com a IA: {str(e)[:200]}"
+                    yield {"type": "error", "content": error_msg}
+                    return
+
+                for chunk in stream:
+                    if not chunk.choices:
+                        continue
+                    delta = chunk.choices[0].delta
+
+                    # Text content
+                    if delta.content:
+                        collected_text += delta.content
+                        yield {"type": "text", "content": delta.content}
+
+                    # Tool calls (accumulated across chunks)
+                    if delta.tool_calls:
+                        for tc_delta in delta.tool_calls:
+                            idx = tc_delta.index
+                            if idx not in collected_tool_calls:
+                                collected_tool_calls[idx] = {
+                                    "id": tc_delta.id or "",
+                                    "name": "",
+                                    "arguments": "",
+                                }
+                            if tc_delta.id:
+                                collected_tool_calls[idx]["id"] = tc_delta.id
+                            if tc_delta.function:
+                                if tc_delta.function.name:
+                                    collected_tool_calls[idx]["name"] = tc_delta.function.name
+                                if tc_delta.function.arguments:
+                                    collected_tool_calls[idx]["arguments"] += tc_delta.function.arguments
+
+                # Build assistant message
+                msg_dict = {"role": "assistant", "content": collected_text}
+                if collected_tool_calls:
+                    msg_dict["tool_calls"] = [
+                        {
+                            "id": tc["id"],
+                            "type": "function",
+                            "function": {
+                                "name": tc["name"],
+                                "arguments": tc["arguments"],
+                            }
+                        }
+                        for tc in collected_tool_calls.values()
+                    ]
+                messages.append(msg_dict)
+
+                if not collected_tool_calls:
+                    break
+
+                # Execute tools
+                for tc in collected_tool_calls.values():
+                    yield {"type": "tool_call", "tool": tc["name"]}
+                    try:
+                        func_args = json.loads(tc["arguments"])
+                    except json.JSONDecodeError:
+                        func_args = {}
+                    result = await self.tools_handler.handle_tool_call(tc["name"], func_args)
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "content": result if isinstance(result, str) else json.dumps(result, default=str, ensure_ascii=False),
+                    })
+        except Exception as e:
+            logger.error(f"Erro inesperado no streaming: {e}", exc_info=True)
+            yield {"type": "error", "content": f"Erro inesperado: {str(e)[:200]}"}
 
     async def listar_conversas(self, colaborador_id: str, limit: int = 10) -> list:
         """Lista conversas do colaborador"""

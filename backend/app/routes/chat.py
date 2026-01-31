@@ -54,12 +54,17 @@ async def enviar_mensagem_stream(data: ChatMessage, db: AsyncSession = Depends(g
     agent = AgentService(db)
 
     async def generate():
-        async for chunk in agent.processar_mensagem_stream(
-            colaborador_id=str(data.colaborador_id),
-            mensagem=data.mensagem,
-            conversa_id=str(data.conversa_id) if data.conversa_id else None,
-        ):
-            yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+        try:
+            async for chunk in agent.processar_mensagem_stream(
+                colaborador_id=str(data.colaborador_id),
+                mensagem=data.mensagem,
+                conversa_id=str(data.conversa_id) if data.conversa_id else None,
+            ):
+                yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            logger.error(f"Erro no streaming: {e}", exc_info=True)
+            error_payload = {"type": "error", "content": f"Erro no servidor: {str(e)[:200]}"}
+            yield f"data: {json.dumps(error_payload, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")
