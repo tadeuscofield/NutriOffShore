@@ -1,10 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import colaboradores, planos, cardapios, refeicoes, chat, alertas
 from app.database import init_db
+from app.logging_config import setup_logging
 import logging
+import time
+import uuid
 
-logging.basicConfig(level=logging.INFO)
+setup_logging()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -21,16 +24,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    request_id = str(uuid.uuid4())[:8]
+    start_time = time.time()
+
+    # Skip noisy health checks
+    if request.url.path == "/health":
+        return await call_next(request)
+
+    logger.info(
+        "Request started",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "path": request.url.path,
+            "client_ip": request.client.host if request.client else "unknown",
+        },
+    )
+
+    try:
+        response = await call_next(request)
+        duration_ms = round((time.time() - start_time) * 1000)
+
+        log_level = logging.WARNING if response.status_code >= 400 else logging.INFO
+        logger.log(
+            log_level,
+            "Request completed",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": duration_ms,
+            },
+        )
+        response.headers["X-Request-ID"] = request_id
+        return response
+    except Exception as e:
+        duration_ms = round((time.time() - start_time) * 1000)
+        logger.error(
+            "Request failed",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "duration_ms": duration_ms,
+                "error_detail": str(e),
+            },
+            exc_info=True,
+        )
+        raise
+
+
 app.include_router(colaboradores.router, prefix="/api/v1/colaboradores", tags=["Colaboradores"])
 app.include_router(planos.router, prefix="/api/v1/planos", tags=["Planos Nutricionais"])
-app.include_router(cardapios.router, prefix="/api/v1/cardapios", tags=["Cardapios"])
-app.include_router(refeicoes.router, prefix="/api/v1/refeicoes", tags=["Refeicoes"])
+app.include_router(cardapios.router, prefix="/api/v1/cardapios", tags=["Cardápios"])
+app.include_router(refeicoes.router, prefix="/api/v1/refeicoes", tags=["Refeições"])
 app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat AI"])
-app.include_router(alertas.router, prefix="/api/v1/alertas", tags=["Alertas Medicos"])
+app.include_router(alertas.router, prefix="/api/v1/alertas", tags=["Alertas Médicos"])
+
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "NutriOffshore AI"}
+
 
 @app.on_event("startup")
 async def startup():
