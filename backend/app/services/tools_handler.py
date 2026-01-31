@@ -47,7 +47,7 @@ class ToolsHandler:
         }
         handler = handlers.get(tool_name)
         if not handler:
-            return json.dumps({"error": "Tool " + tool_name + " nao reconhecida"})
+            return json.dumps({"error": "Tool " + tool_name + " não reconhecida"})
         try:
             result = await handler(tool_input)
             return json.dumps(result, default=str, ensure_ascii=False)
@@ -61,7 +61,7 @@ class ToolsHandler:
         result = await self.db.execute(stmt)
         colaborador = result.scalar_one_or_none()
         if not colaborador:
-            return {"error": "Colaborador nao encontrado"}
+            return {"error": "Colaborador não encontrado"}
         ultima_medicao = None
         if colaborador.medicoes:
             sorted_medicoes = sorted(colaborador.medicoes, key=lambda m: m.data_medicao, reverse=True)
@@ -84,7 +84,7 @@ class ToolsHandler:
         result = await self.db.execute(stmt)
         cardapios = result.scalars().all()
         if not cardapios:
-            return {"data": data_str, "mensagem": "Cardapio nao cadastrado para esta data", "refeicoes": {}}
+            return {"data": data_str, "mensagem": "Cardápio não cadastrado para esta data", "refeicoes": {}}
         refeicoes = {}
         for c in cardapios:
             refeicoes[c.refeicao] = c.itens
@@ -123,7 +123,7 @@ class ToolsHandler:
         log = RefeicaoLog(colaborador_id=params["colaborador_id"], plano_id=params.get("plano_id"), data=date.today(), refeicao=params["refeicao_tipo"], itens_consumidos=params.get("itens", []), calorias_estimadas=sum(i.get("calorias_estimadas", 0) for i in params.get("itens", [])), aderencia_percentual=params.get("aderencia_plano"), observacoes=params.get("observacoes"))
         self.db.add(log)
         await self.db.commit()
-        return {"success": True, "mensagem": "Refeicao registrada com sucesso"}
+        return {"success": True, "mensagem": "Refeição registrada com sucesso"}
 
     async def _get_historico_peso(self, params: dict) -> dict:
         colaborador_id = params["colaborador_id"]
@@ -156,23 +156,23 @@ class ToolsHandler:
         cid = params.get('colaborador_id', '')
         msg = params.get('mensagem', '')
         horario = params.get('horario', '')
-        logger.info(f"Notificacao agendada para {cid}: {msg} as {horario}")
+        logger.info(f"Notificação agendada para {cid}: {msg} às {horario}")
         return {"success": True, "mensagem": f"Lembrete agendado para {horario}", "tipo": params.get("tipo", "geral")}
 
     async def _get_estoque_refeitorio(self, params: dict) -> dict:
-        return {"status": "disponivel", "data": str(date.today()), "nota": "Consulte o cardapio do dia para itens especificos disponiveis."}
+        return {"status": "disponivel", "data": str(date.today()), "nota": "Consulte o cardápio do dia para itens específicos disponíveis."}
 
     async def _flag_alerta_medico(self, params: dict) -> dict:
         alerta = AlertaMedico(colaborador_id=params["colaborador_id"], tipo=params.get("tipo_alerta", "moderado"), motivo=params["motivo"], recomendacao=params.get("recomendacao"))
         self.db.add(alerta)
         await self.db.commit()
-        logger.warning(f"ALERTA MEDICO [{alerta.tipo}]: {alerta.motivo}")
-        return {"success": True, "alerta_id": str(alerta.id), "mensagem": "Alerta medico registrado e equipe notificada"}
+        logger.warning(f"ALERTA MÉDICO [{alerta.tipo}]: {alerta.motivo}")
+        return {"success": True, "alerta_id": str(alerta.id), "mensagem": "Alerta médico registrado e equipe notificada"}
 
     async def _calcular_necessidades(self, params: dict) -> dict:
         idade = params.get("idade")
         if not idade:
-            return {"error": "Parametro 'idade' obrigatorio. Calcule a partir de data_nascimento do perfil do colaborador."}
+            return {"error": "Parâmetro 'idade' obrigatório. Calcule a partir de data_nascimento do perfil do colaborador."}
         objetivo = params.get("objetivo", "saude_geral")
         objetivos_validos = {"perda_peso", "ganho_massa", "manutencao", "performance", "saude_geral"}
         if objetivo not in objetivos_validos:

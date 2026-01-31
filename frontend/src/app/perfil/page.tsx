@@ -41,7 +41,7 @@ export default function PerfilPage() {
         turno_atual: "diurno", regime_embarque: "14x14", meta_principal: "saude_geral",
       });
     } catch (err) {
-      setMessage({ text: err instanceof Error ? err.message : "Erro de conexao com o servidor", type: "error" });
+      setMessage({ text: err instanceof Error ? err.message : "Erro de conexão com o servidor", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ export default function PerfilPage() {
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div><label className={labelClasses}>Nome</label><input type="text" value={formData.nome} onChange={e => updateField("nome", e.target.value)} className={inputClasses} required /></div>
-            <div><label className={labelClasses}>Matricula</label><input type="text" value={formData.matricula} onChange={e => updateField("matricula", e.target.value)} className={inputClasses} required /></div>
+            <div><label className={labelClasses}>Matrícula</label><input type="text" value={formData.matricula} onChange={e => updateField("matricula", e.target.value)} className={inputClasses} required /></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div><label className={labelClasses}>Nascimento</label><input type="date" value={formData.data_nascimento} onChange={e => updateField("data_nascimento", e.target.value)} className={inputClasses} required /></div>
@@ -75,12 +75,12 @@ export default function PerfilPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className={labelClasses}>Cargo</label><input type="text" value={formData.cargo} onChange={e => updateField("cargo", e.target.value)} className={inputClasses} /></div>
-            <div><label className={labelClasses}>Nivel Atividade</label><select value={formData.nivel_atividade} onChange={e => updateField("nivel_atividade", e.target.value)} className={inputClasses}><option value="sedentario">Sedentario</option><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="intenso">Intenso</option></select></div>
+            <div><label className={labelClasses}>Nível Atividade</label><select value={formData.nivel_atividade} onChange={e => updateField("nivel_atividade", e.target.value)} className={inputClasses}><option value="sedentario">Sedentário</option><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="intenso">Intenso</option></select></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div><label className={labelClasses}>Turno</label><select value={formData.turno_atual} onChange={e => updateField("turno_atual", e.target.value)} className={inputClasses}><option value="diurno">Diurno</option><option value="noturno">Noturno</option></select></div>
             <div><label className={labelClasses}>Regime</label><select value={formData.regime_embarque} onChange={e => updateField("regime_embarque", e.target.value)} className={inputClasses}><option value="14x14">14x14</option><option value="21x21">21x21</option><option value="28x28">28x28</option></select></div>
-            <div><label className={labelClasses}>Objetivo</label><select value={formData.meta_principal} onChange={e => updateField("meta_principal", e.target.value)} className={inputClasses}><option value="perda_peso">Perda de peso</option><option value="ganho_massa">Ganho de massa</option><option value="manutencao">Manutencao</option><option value="performance">Performance</option><option value="saude_geral">Saude geral</option></select></div>
+            <div><label className={labelClasses}>Objetivo</label><select value={formData.meta_principal} onChange={e => updateField("meta_principal", e.target.value)} className={inputClasses}><option value="perda_peso">Perda de peso</option><option value="ganho_massa">Ganho de massa</option><option value="manutencao">Manutenção</option><option value="performance">Performance</option><option value="saude_geral">Saúde geral</option></select></div>
           </div>
           <button
             type="submit"

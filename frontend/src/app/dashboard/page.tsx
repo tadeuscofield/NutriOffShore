@@ -32,7 +32,7 @@ export default function DashboardPage() {
           {[
             { label: "Peso Atual", value: "86.0 kg", change: "-2.5 kg", positive: true },
             { label: "IMC", value: "26.3", change: "Sobrepeso", positive: false },
-            { label: "Aderencia", value: "78%", change: "+5%", positive: true },
+            { label: "Aderência", value: "78%", change: "+5%", positive: true },
             { label: "Dias Embarcado", value: "12/14", change: "2 restantes", positive: true },
           ].map((stat, i) => (
             <div key={i} className="bg-white rounded-2xl border border-slate-200 p-4">
@@ -53,11 +53,11 @@ export default function DashboardPage() {
 
         {/* Recent meals */}
         <div className="mt-8 bg-white rounded-2xl border border-slate-200 p-6">
-          <h3 className="font-semibold text-slate-800 mb-4">Refeicoes Recentes</h3>
+          <h3 className="font-semibold text-slate-800 mb-4">Refeições Recentes</h3>
           <div className="space-y-3">
             {[
-              { refeicao: "Cafe da manha", hora: "06:15", cal: 480, aderencia: 90 },
-              { refeicao: "Almoco", hora: "12:00", cal: 650, aderencia: 75 },
+              { refeicao: "Café da manhã", hora: "06:15", cal: 480, aderencia: 90 },
+              { refeicao: "Almoço", hora: "12:00", cal: 650, aderencia: 75 },
               { refeicao: "Lanche", hora: "15:30", cal: 180, aderencia: 100 },
               { refeicao: "Jantar", hora: "19:00", cal: 520, aderencia: 80 },
             ].map((r, i) => (

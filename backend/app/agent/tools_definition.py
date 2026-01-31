@@ -1,11 +1,11 @@
-"""Definicao das Tools do Agente NutriOffshore - formato OpenAI (compativel OpenRouter)"""
+"""Definição das Tools do Agente NutriOffshore - formato OpenAI (compatível OpenRouter)"""
 
 TOOLS = [
     {
         "type": "function",
         "function": {
             "name": "get_colaborador_profile",
-            "description": "Busca perfil completo do colaborador incluindo medicoes, condicoes de saude e preferencias alimentares",
+            "description": "Busca perfil completo do colaborador incluindo medições, condições de saúde e preferências alimentares",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -22,7 +22,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_cardapio_dia",
-            "description": "Retorna cardapio do refeitorio da plataforma para um dia especifico",
+            "description": "Retorna cardápio do refeitório da plataforma para um dia específico",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -32,7 +32,7 @@ TOOLS = [
                     },
                     "plataforma_id": {
                         "type": "string",
-                        "description": "ID da plataforma (UUID). Padrao: a0000000-0000-0000-0000-000000000001"
+                        "description": "ID da plataforma (UUID). Padrão: a0000000-0000-0000-0000-000000000001"
                     }
                 },
                 "required": ["data"]
@@ -43,7 +43,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_cardapio_semana",
-            "description": "Retorna cardapios da semana inteira da plataforma",
+            "description": "Retorna cardápios da semana inteira da plataforma",
             "parameters": {
                 "type": "object",
                 "properties": {},
@@ -60,12 +60,12 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "colaborador_id": {"type": "string"},
-                    "meta_calorica": {"type": "number", "description": "Meta calorica diaria em kcal"},
-                    "proteina_g": {"type": "number", "description": "Gramas de proteina por dia"},
+                    "meta_calorica": {"type": "number", "description": "Meta calórica diária em kcal"},
+                    "proteina_g": {"type": "number", "description": "Gramas de proteína por dia"},
                     "carboidratos_g": {"type": "number", "description": "Gramas de carboidratos por dia"},
                     "gorduras_g": {"type": "number", "description": "Gramas de gorduras por dia"},
                     "objetivo": {"type": "string", "description": "Objetivo do plano"},
-                    "refeicoes": {"type": "array", "description": "Detalhamento das refeicoes"},
+                    "refeicoes": {"type": "array", "description": "Detalhamento das refeições"},
                     "suplementacao": {"type": "array", "description": "Suplementos recomendados"},
                     "observacoes": {"type": "string"}
                 },
@@ -77,7 +77,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "log_refeicao",
-            "description": "Registra uma refeicao consumida pelo colaborador",
+            "description": "Registra uma refeição consumida pelo colaborador",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -85,7 +85,7 @@ TOOLS = [
                     "refeicao_tipo": {
                         "type": "string",
                         "enum": ["cafe_manha", "lanche_manha", "almoco", "lanche_tarde", "jantar", "ceia"],
-                        "description": "Tipo da refeicao"
+                        "description": "Tipo da refeição"
                     },
                     "itens": {
                         "type": "array",
@@ -99,7 +99,7 @@ TOOLS = [
                         },
                         "description": "Itens consumidos"
                     },
-                    "aderencia_plano": {"type": "number", "description": "0-100 aderencia ao plano"},
+                    "aderencia_plano": {"type": "number", "description": "0-100 aderência ao plano"},
                     "observacoes": {"type": "string"}
                 },
                 "required": ["colaborador_id", "refeicao_tipo", "itens"]
@@ -110,12 +110,12 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_historico_peso",
-            "description": "Busca evolucao de peso e medicoes do colaborador",
+            "description": "Busca evolução de peso e medições do colaborador",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "colaborador_id": {"type": "string"},
-                    "periodo": {"type": "number", "description": "Periodo em dias (padrao: 90)"}
+                    "periodo": {"type": "number", "description": "Período em dias (padrão: 90)"}
                 },
                 "required": ["colaborador_id"]
             }
@@ -125,12 +125,12 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_historico_refeicoes",
-            "description": "Busca historico de refeicoes registradas",
+            "description": "Busca histórico de refeições registradas",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "colaborador_id": {"type": "string"},
-                    "periodo": {"type": "number", "description": "Periodo em dias (padrao: 7)"}
+                    "periodo": {"type": "number", "description": "Período em dias (padrão: 7)"}
                 },
                 "required": ["colaborador_id"]
             }
@@ -140,13 +140,13 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "send_notificacao",
-            "description": "Agenda notificacao ou lembrete para o colaborador",
+            "description": "Agenda notificação ou lembrete para o colaborador",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "colaborador_id": {"type": "string"},
-                    "mensagem": {"type": "string", "description": "Texto da notificacao (max 200 chars)"},
-                    "horario": {"type": "string", "description": "Horario no formato HH:MM"},
+                    "mensagem": {"type": "string", "description": "Texto da notificação (max 200 chars)"},
+                    "horario": {"type": "string", "description": "Horário no formato HH:MM"},
                     "tipo": {
                         "type": "string",
                         "enum": ["lembrete_refeicao", "hidratacao", "pesagem", "motivacional"]
@@ -164,7 +164,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "get_estoque_refeitorio",
-            "description": "Consulta disponibilidade de itens no refeitorio da plataforma",
+            "description": "Consulta disponibilidade de itens no refeitório da plataforma",
             "parameters": {
                 "type": "object",
                 "properties": {},
@@ -176,7 +176,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "flag_alerta_medico",
-            "description": "Sinaliza situacao que requer atencao do medico de bordo",
+            "description": "Sinaliza situação que requer atenção do médico de bordo",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -185,8 +185,8 @@ TOOLS = [
                         "type": "string",
                         "enum": ["urgente", "moderado", "baixo"]
                     },
-                    "motivo": {"type": "string", "description": "Descricao do motivo do alerta"},
-                    "recomendacao": {"type": "string", "description": "Recomendacao para equipe medica"}
+                    "motivo": {"type": "string", "description": "Descrição do motivo do alerta"},
+                    "recomendacao": {"type": "string", "description": "Recomendação para equipe médica"}
                 },
                 "required": ["colaborador_id", "tipo_alerta", "motivo"]
             }
