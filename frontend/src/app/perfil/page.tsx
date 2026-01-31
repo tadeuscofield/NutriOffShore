@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import { api } from "@/lib/api";
+import { useAppStore } from "@/lib/store";
 
 interface ProfileFormData {
   nome: string;
@@ -17,6 +19,8 @@ interface ProfileFormData {
 }
 
 export default function PerfilPage() {
+  const router = useRouter();
+  const setColaborador = useAppStore((s) => s.setColaborador);
   const [formData, setFormData] = useState<ProfileFormData>({
     nome: "", matricula: "", data_nascimento: "", sexo: "M",
     altura_cm: "", cargo: "", nivel_atividade: "moderado",
@@ -33,13 +37,10 @@ export default function PerfilPage() {
     setLoading(true);
     setMessage(null);
     try {
-      await api.criarColaborador({ ...formData, altura_cm: Number(formData.altura_cm) || null });
-      setMessage({ text: "Colaborador cadastrado com sucesso!", type: "success" });
-      setFormData({
-        nome: "", matricula: "", data_nascimento: "", sexo: "M",
-        altura_cm: "", cargo: "", nivel_atividade: "moderado",
-        turno_atual: "diurno", regime_embarque: "14x14", meta_principal: "saude_geral",
-      });
+      const novoColaborador = await api.criarColaborador({ ...formData, altura_cm: Number(formData.altura_cm) || null });
+      setColaborador(novoColaborador);
+      setMessage({ text: "Colaborador cadastrado com sucesso! Redirecionando para o Chat...", type: "success" });
+      setTimeout(() => router.push("/chat"), 1500);
     } catch (err) {
       setMessage({ text: err instanceof Error ? err.message : "Erro de conexão com o servidor", type: "error" });
     } finally {
