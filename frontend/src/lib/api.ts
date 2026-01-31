@@ -29,6 +29,15 @@ export const api = {
     fetchAPI<any>(`/api/v1/planos/colaborador/${colaboradorId}/ativo`),
   listarPlanos: (colaboradorId: string) =>
     fetchAPI<any[]>(`/api/v1/planos/colaborador/${colaboradorId}`),
+  atualizarPlano: (planoId: string, data: any) =>
+    fetchAPI<any>(`/api/v1/planos/${planoId}`, { method: "PUT", body: JSON.stringify(data) }),
+  deletarPlano: async (planoId: string) => {
+    const res = await fetch(`${API_BASE}/api/v1/planos/${planoId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(error.detail || "Erro ao deletar plano");
+    }
+  },
 
   // Cardápios
   cardapioDia: (data: string) => fetchAPI<any>(`/api/v1/cardapios/dia/${data}`),

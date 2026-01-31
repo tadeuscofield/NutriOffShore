@@ -65,3 +65,14 @@ async def atualizar_plano(plano_id: UUID, data: PlanoUpdate, db: AsyncSession = 
     await db.commit()
     await db.refresh(plano)
     return plano
+
+
+@router.delete("/{plano_id}", status_code=204)
+async def deletar_plano(plano_id: UUID, db: AsyncSession = Depends(get_db)):
+    stmt = select(PlanoNutricional).where(PlanoNutricional.id == plano_id)
+    result = await db.execute(stmt)
+    plano = result.scalar_one_or_none()
+    if not plano:
+        raise HTTPException(status_code=404, detail="Plano não encontrado")
+    await db.delete(plano)
+    await db.commit()
