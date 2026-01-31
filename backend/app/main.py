@@ -86,7 +86,7 @@ app.include_router(chat.router, prefix="/api/v1/chat", tags=["Chat AI"])
 app.include_router(alertas.router, prefix="/api/v1/alertas", tags=["Alertas Médicos"])
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD", "POST", "OPTIONS"])
 async def health_check():
     return {"status": "healthy", "service": "NutriOffshore AI"}
 
