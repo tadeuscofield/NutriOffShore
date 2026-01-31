@@ -18,6 +18,12 @@ export default function Home() {
           <Link href="/dashboard" className="text-ocean-200 hover:text-white transition-colors text-sm">
             Dashboard
           </Link>
+          <Link href="/plano" className="text-ocean-200 hover:text-white transition-colors text-sm">
+            Plano
+          </Link>
+          <Link href="/perfil" className="text-ocean-200 hover:text-white transition-colors text-sm">
+            Perfil
+          </Link>
         </nav>
       </header>
 
