@@ -22,6 +22,8 @@ router = APIRouter()
 
 def _check_ownership(colaborador_id: UUID, current_user: dict) -> None:
     """Verifica se o colaborador_id pertence ao usuario autenticado."""
+    if current_user.get("auth_disabled"):
+        return
     if str(colaborador_id) != current_user["sub"]:
         raise HTTPException(status_code=403, detail="Acesso negado")
 
@@ -46,15 +48,23 @@ async def listar_colaboradores(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    # Escopo: retorna apenas o proprio colaborador
-    user_id = current_user["sub"]
-    stmt = (
-        select(Colaborador)
-        .where(Colaborador.id == user_id)
-        .offset(skip)
-        .limit(limit)
-        .order_by(Colaborador.nome)
-    )
+    # Quando auth desabilitado, retorna todos; senao, apenas o proprio
+    if current_user.get("auth_disabled"):
+        stmt = (
+            select(Colaborador)
+            .offset(skip)
+            .limit(limit)
+            .order_by(Colaborador.nome)
+        )
+    else:
+        user_id = current_user["sub"]
+        stmt = (
+            select(Colaborador)
+            .where(Colaborador.id == user_id)
+            .offset(skip)
+            .limit(limit)
+            .order_by(Colaborador.nome)
+        )
     result = await db.execute(stmt)
     return result.scalars().all()
 

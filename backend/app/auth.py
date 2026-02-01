@@ -15,7 +15,7 @@ from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 settings = get_settings()
 
@@ -54,12 +54,23 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
+def get_current_user(token: Optional[str] = Depends(oauth2_scheme)) -> dict:
     """
     Dependencia FastAPI que valida o JWT do header Authorization
     e retorna o payload decodificado.
-    Levanta HTTP 401 se o token for invalido ou expirado.
+    Quando AUTH_ENABLED=False, permite acesso anonimo retornando um payload dummy.
+    Levanta HTTP 401 se auth esta habilitado e o token for invalido ou expirado.
     """
+    if not settings.AUTH_ENABLED:
+        return {"sub": "anonymous", "auth_disabled": True}
+
+    if token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token nao fornecido",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Token invalido ou expirado",

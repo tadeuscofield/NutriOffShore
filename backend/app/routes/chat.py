@@ -32,6 +32,8 @@ class ChatResponse(BaseModel):
 
 def _verify_colaborador_ownership(data: ChatMessage, current_user: dict) -> None:
     """Verifica se o colaborador_id da mensagem pertence ao usuario autenticado."""
+    if current_user.get("auth_disabled"):
+        return
     if str(data.colaborador_id) != current_user["sub"]:
         raise HTTPException(status_code=403, detail="Acesso negado: colaborador_id nao corresponde ao usuario autenticado")
 
@@ -104,7 +106,7 @@ async def historico_conversas(
     current_user: dict = Depends(get_current_user),
 ):
     """Lista conversas anteriores do colaborador"""
-    if str(colaborador_id) != current_user["sub"]:
+    if not current_user.get("auth_disabled") and str(colaborador_id) != current_user["sub"]:
         raise HTTPException(status_code=403, detail="Acesso negado")
     agent = AgentService(db)
     return await agent.listar_conversas(str(colaborador_id), limit)
