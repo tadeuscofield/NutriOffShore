@@ -103,6 +103,10 @@ class NutriCalculator:
 
     @staticmethod
     def calcular_imc(peso_kg: float, altura_cm: float) -> tuple[float, str]:
+        if altura_cm <= 0:
+            raise ValueError("Altura deve ser maior que zero para calcular o IMC")
+        if peso_kg <= 0:
+            raise ValueError("Peso deve ser maior que zero para calcular o IMC")
         altura_m = altura_cm / 100
         imc = peso_kg / (altura_m ** 2)
         if imc < 18.5:

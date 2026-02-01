@@ -34,6 +34,8 @@ export default function ChatWindow() {
         if (chunk.type === "text") {
           fullContent += chunk.content;
           updateLastAssistantMessage(fullContent);
+        } else if (chunk.type === "done" && chunk.conversa_id) {
+          setConversaId(chunk.conversa_id);
         } else if (chunk.type === "error") {
           updateLastAssistantMessage(chunk.content || "Erro no servidor. Tente novamente.");
           setIsLoading(false);
@@ -62,30 +64,30 @@ export default function ChatWindow() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="text-center py-20">
             <div className="text-5xl mb-4">🥗</div>
-            <h3 className="text-lg font-semibold text-slate-700 mb-2">
-              Olá! Sou o NutriOffshore
+            <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-2">
+              Ola! Sou o NutriOffshore
             </h3>
-            <p className="text-slate-500 max-w-md mx-auto">
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
               Seu nutricionista virtual para a plataforma. Me conte seu objetivo
-              ou pergunte sobre alimentação!
+              ou pergunte sobre alimentacao!
             </p>
             <div className="flex flex-wrap gap-2 justify-center mt-6">
               {[
                 "Quero perder peso neste embarque",
                 "O que devo comer hoje?",
-                "Sou diabético, o que muda?",
+                "Sou diabetico, o que muda?",
                 "Monte meu plano nutricional",
               ].map((suggestion) => (
                 <button
                   key={suggestion}
                   onClick={() => { setInput(suggestion); inputRef.current?.focus(); }}
-                  className="px-3 py-2 bg-ocean-50 text-ocean-700 rounded-lg text-sm hover:bg-ocean-100 transition-colors border border-ocean-200"
+                  className="px-3 py-2 bg-ocean-50 dark:bg-ocean-900/30 text-ocean-700 dark:text-ocean-300 rounded-lg text-sm hover:bg-ocean-100 dark:hover:bg-ocean-900/50 transition-colors border border-ocean-200 dark:border-ocean-800"
                 >
                   {suggestion}
                 </button>
@@ -110,7 +112,7 @@ export default function ChatWindow() {
       </div>
 
       {/* Input */}
-      <div className="border-t border-slate-200 bg-white p-4">
+      <div className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4">
         <div className="flex gap-3 max-w-4xl mx-auto">
           <textarea
             ref={inputRef}
@@ -120,12 +122,12 @@ export default function ChatWindow() {
             placeholder={colaboradorId ? "Digite sua mensagem..." : "Selecione um colaborador primeiro"}
             disabled={!colaboradorId || isLoading}
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-slate-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-transparent disabled:bg-slate-100 disabled:cursor-not-allowed"
+            className="flex-1 resize-none rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ocean-500 focus:border-transparent disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:cursor-not-allowed placeholder:text-slate-400 dark:placeholder:text-slate-500"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading || !colaboradorId}
-            className="px-6 py-3 bg-ocean-600 text-white rounded-xl font-medium hover:bg-ocean-500 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-ocean-600 text-white rounded-xl font-medium hover:bg-ocean-500 transition-colors disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
           >
             Enviar
           </button>

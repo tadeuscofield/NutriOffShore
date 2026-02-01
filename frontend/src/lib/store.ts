@@ -7,7 +7,8 @@ interface AppState {
   conversaId: string | null;
   messages: ChatMessage[];
   isLoading: boolean;
-  
+  darkMode: boolean;
+
   setColaboradorId: (id: string) => void;
   setColaborador: (c: Colaborador) => void;
   setConversaId: (id: string | null) => void;
@@ -16,6 +17,7 @@ interface AppState {
   updateLastAssistantMessage: (content: string) => void;
   setIsLoading: (loading: boolean) => void;
   clearChat: () => void;
+  toggleDarkMode: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -24,6 +26,9 @@ export const useAppStore = create<AppState>((set) => ({
   conversaId: null,
   messages: [],
   isLoading: false,
+  darkMode: typeof window !== "undefined"
+    ? localStorage.getItem("darkMode") === "true"
+    : false,
 
   setColaboradorId: (id) => set({ colaboradorId: id }),
   setColaborador: (c) => set({ colaborador: c, colaboradorId: c.id }),
@@ -41,4 +46,12 @@ export const useAppStore = create<AppState>((set) => ({
     }),
   setIsLoading: (loading) => set({ isLoading: loading }),
   clearChat: () => set({ messages: [], conversaId: null }),
+  toggleDarkMode: () =>
+    set((state) => {
+      const newMode = !state.darkMode;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("darkMode", String(newMode));
+      }
+      return { darkMode: newMode };
+    }),
 }));

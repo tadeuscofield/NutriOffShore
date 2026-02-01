@@ -6,6 +6,7 @@ from uuid import UUID
 from datetime import date, timedelta
 
 from app.database import get_db
+from app.auth import get_current_user
 from app.models.cardapio import Cardapio
 from app.schemas.cardapio import CardapioCreate, CardapioResponse
 
@@ -13,7 +14,11 @@ router = APIRouter()
 
 
 @router.post("/", response_model=CardapioResponse, status_code=201)
-async def criar_cardapio(data: CardapioCreate, db: AsyncSession = Depends(get_db)):
+async def criar_cardapio(
+    data: CardapioCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     cardapio = Cardapio(
         plataforma_id=data.plataforma_id,
         data=data.data,
@@ -27,7 +32,12 @@ async def criar_cardapio(data: CardapioCreate, db: AsyncSession = Depends(get_db
 
 
 @router.get("/dia/{data_str}")
-async def cardapio_do_dia(data_str: str, plataforma_id: UUID = None, db: AsyncSession = Depends(get_db)):
+async def cardapio_do_dia(
+    data_str: str,
+    plataforma_id: UUID = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     data_cardapio = date.fromisoformat(data_str)
     stmt = select(Cardapio).where(Cardapio.data == data_cardapio)
     if plataforma_id:
@@ -44,7 +54,11 @@ async def cardapio_do_dia(data_str: str, plataforma_id: UUID = None, db: AsyncSe
 
 
 @router.get("/semana")
-async def cardapio_semana(plataforma_id: UUID = None, db: AsyncSession = Depends(get_db)):
+async def cardapio_semana(
+    plataforma_id: UUID = None,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     hoje = date.today()
     inicio = hoje - timedelta(days=hoje.weekday())
     fim = inicio + timedelta(days=6)

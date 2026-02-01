@@ -150,15 +150,26 @@ export default function PlanoPage() {
     URL.revokeObjectURL(url);
   }
 
+  // Escape key handler for delete modal
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && showConfirmDelete) {
+        setShowConfirmDelete(null);
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [showConfirmDelete]);
+
   if (!colaboradorId) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
         <Header />
         <main className="max-w-4xl mx-auto px-4 py-8">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">Plano Nutricional</h2>
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-6">Plano Nutricional</h2>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
             <div className="text-4xl mb-3">📋</div>
-            <p className="text-slate-500">Selecione um colaborador na aba <strong>Chat</strong> para ver o plano nutricional.</p>
+            <p className="text-slate-500 dark:text-slate-400">Selecione um colaborador na aba <strong>Chat</strong> para ver o plano nutricional.</p>
           </div>
         </main>
       </div>
@@ -166,13 +177,13 @@ export default function PlanoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Header />
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-slate-800">Plano Nutricional</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Plano Nutricional</h2>
           {colaborador && (
-            <span className="text-sm text-ocean-600 bg-ocean-50 px-3 py-1 rounded-lg">
+            <span className="text-sm text-ocean-600 dark:text-ocean-400 bg-ocean-50 dark:bg-ocean-900/30 px-3 py-1 rounded-lg">
               {colaborador.nome}
             </span>
           )}
@@ -186,22 +197,22 @@ export default function PlanoPage() {
         )}
 
         {loading ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <div className="animate-pulse text-slate-400">Carregando plano...</div>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+            <div className="animate-pulse text-slate-400 dark:text-slate-500">Carregando plano...</div>
           </div>
         ) : !plano ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-12 text-center">
             <div className="text-4xl mb-3">📋</div>
-            <p className="text-slate-500 mb-2">Nenhum plano nutricional encontrado.</p>
-            <p className="text-sm text-slate-400">Peça ao agente IA no <strong>Chat</strong> para montar seu plano.</p>
+            <p className="text-slate-500 dark:text-slate-400 mb-2">Nenhum plano nutricional encontrado.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">Peca ao agente IA no <strong>Chat</strong> para montar seu plano.</p>
           </div>
         ) : (
           <>
             {/* Active Plan Card */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <h3 className="font-semibold text-slate-800">
+                  <h3 className="font-semibold text-slate-800 dark:text-slate-100">
                     {editing ? "Editando Plano" : "Plano Ativo"}
                   </h3>
                   <span className={`text-xs px-3 py-1 rounded-full font-medium ${plano.ativo ? "bg-green-100 text-green-700" : "bg-slate-100 text-slate-500"}`}>
@@ -276,7 +287,7 @@ export default function PlanoPage() {
               )}
 
               {/* Plan details */}
-              <div className="text-sm text-slate-600 space-y-2">
+              <div className="text-sm text-slate-600 dark:text-slate-400 space-y-2">
                 {editing ? (
                   <div>
                     <strong>Objetivo:</strong>
@@ -295,8 +306,8 @@ export default function PlanoPage() {
             </div>
 
             {/* Meal Distribution */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
-              <h3 className="font-semibold text-slate-800 mb-4">Distribuição de Refeições</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 mb-6">
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Distribuição de Refeições</h3>
               <div className="space-y-4">
                 {getRefeicoes(plano).map((ref: any, i: number) => (
                   <div key={i} className="flex items-start gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
@@ -315,8 +326,8 @@ export default function PlanoPage() {
 
             {/* History of Plans */}
             {planos.length > 1 && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-800 mb-4">Histórico de Planos</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+                <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Historico de Planos</h3>
                 <div className="space-y-3">
                   {planos.map((p) => (
                     <div key={p.id} className={`flex items-center justify-between p-3 rounded-xl border ${p.id === plano.id ? "border-ocean-300 bg-ocean-50" : "border-slate-100 hover:bg-slate-50"} transition-colors`}>
@@ -349,10 +360,10 @@ export default function PlanoPage() {
 
         {/* Delete Confirmation Modal */}
         {showConfirmDelete && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowConfirmDelete(null)}>
-            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
-              <h3 className="font-semibold text-slate-800 mb-2">Confirmar exclusão</h3>
-              <p className="text-sm text-slate-500 mb-6">Tem certeza que deseja excluir este plano nutricional? Esta ação não pode ser desfeita.</p>
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" onClick={() => setShowConfirmDelete(null)}>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={e => e.stopPropagation()}>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-2">Confirmar exclusao</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Tem certeza que deseja excluir este plano nutricional? Esta acao nao pode ser desfeita.</p>
               <div className="flex gap-3 justify-end">
                 <button onClick={() => setShowConfirmDelete(null)} className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
                   Cancelar

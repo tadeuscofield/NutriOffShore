@@ -1,4 +1,5 @@
 "use client";
+import DOMPurify from "dompurify";
 import type { ChatMessage } from "@/lib/types";
 
 export default function MessageBubble({ message }: { message: ChatMessage }) {
@@ -10,12 +11,12 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
         className={`max-w-[80%] rounded-2xl px-4 py-3 ${
           isUser
             ? "bg-ocean-600 text-white rounded-br-md"
-            : "bg-white border border-slate-200 text-slate-800 rounded-bl-md shadow-sm"
+            : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-md shadow-sm"
         }`}
       >
         {!isUser && (
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-ocean-600 font-semibold text-xs">NutriOffshore</span>
+            <span className="text-ocean-600 dark:text-ocean-400 font-semibold text-xs">NutriOffshore</span>
           </div>
         )}
         {isUser ? (
@@ -25,11 +26,11 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
         ) : (
           <div
             className="text-sm leading-relaxed msg-markdown"
-            dangerouslySetInnerHTML={{ __html: formatMarkdown(message.content) }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formatMarkdown(message.content)) }}
           />
         )}
         {message.timestamp && (
-          <div className={`text-xs mt-1 ${isUser ? "text-ocean-200" : "text-slate-400"}`}>
+          <div className={`text-xs mt-1 ${isUser ? "text-ocean-200" : "text-slate-400 dark:text-slate-500"}`}>
             {new Date(message.timestamp).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
           </div>
         )}

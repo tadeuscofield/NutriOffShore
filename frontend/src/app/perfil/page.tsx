@@ -27,22 +27,27 @@ export default function PerfilPage() {
     turno_atual: "diurno", regime_embarque: "14x14", meta_principal: "saude_geral",
   });
   const [loading, setLoading] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
-  const inputClasses = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:ring-2 focus:ring-ocean-500 focus:border-transparent";
-  const labelClasses = "block text-sm font-medium text-slate-700 mb-1";
+  const inputClasses = "w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 px-3 py-2 text-sm focus:ring-2 focus:ring-ocean-500 focus:border-transparent";
+  const labelClasses = "block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!consent) {
+      setMessage({ text: "Voce precisa concordar com a Politica de Privacidade para continuar.", type: "error" });
+      return;
+    }
     setLoading(true);
     setMessage(null);
     try {
-      const novoColaborador = await api.criarColaborador({ ...formData, altura_cm: Number(formData.altura_cm) || null });
+      const novoColaborador = await api.criarColaborador({ ...formData, altura_cm: Number(formData.altura_cm) || null } as any);
       setColaborador(novoColaborador);
       setMessage({ text: "Colaborador cadastrado com sucesso! Redirecionando para o Chat...", type: "success" });
       setTimeout(() => router.push("/chat"), 1500);
     } catch (err) {
-      setMessage({ text: err instanceof Error ? err.message : "Erro de conexão com o servidor", type: "error" });
+      setMessage({ text: err instanceof Error ? err.message : "Erro de conexao com o servidor", type: "error" });
     } finally {
       setLoading(false);
     }
@@ -53,21 +58,21 @@ export default function PerfilPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       <Header />
       <main className="max-w-2xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-slate-800 mb-6">Cadastro / Perfil</h2>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-6">Cadastro / Perfil</h2>
 
         {message && (
-          <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+          <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === "success" ? "bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800"}`}>
             {message.text}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div><label className={labelClasses}>Nome</label><input type="text" value={formData.nome} onChange={e => updateField("nome", e.target.value)} className={inputClasses} required /></div>
-            <div><label className={labelClasses}>Matrícula</label><input type="text" value={formData.matricula} onChange={e => updateField("matricula", e.target.value)} className={inputClasses} required /></div>
+            <div><label className={labelClasses}>Matricula</label><input type="text" value={formData.matricula} onChange={e => updateField("matricula", e.target.value)} className={inputClasses} required /></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div><label className={labelClasses}>Nascimento</label><input type="date" value={formData.data_nascimento} onChange={e => updateField("data_nascimento", e.target.value)} className={inputClasses} required /></div>
@@ -76,17 +81,33 @@ export default function PerfilPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div><label className={labelClasses}>Cargo</label><input type="text" value={formData.cargo} onChange={e => updateField("cargo", e.target.value)} className={inputClasses} /></div>
-            <div><label className={labelClasses}>Nível Atividade</label><select value={formData.nivel_atividade} onChange={e => updateField("nivel_atividade", e.target.value)} className={inputClasses}><option value="sedentario">Sedentário</option><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="intenso">Intenso</option></select></div>
+            <div><label className={labelClasses}>Nivel Atividade</label><select value={formData.nivel_atividade} onChange={e => updateField("nivel_atividade", e.target.value)} className={inputClasses}><option value="sedentario">Sedentario</option><option value="leve">Leve</option><option value="moderado">Moderado</option><option value="intenso">Intenso</option><option value="muito_intenso">Muito Intenso</option></select></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div><label className={labelClasses}>Turno</label><select value={formData.turno_atual} onChange={e => updateField("turno_atual", e.target.value)} className={inputClasses}><option value="diurno">Diurno</option><option value="noturno">Noturno</option></select></div>
-            <div><label className={labelClasses}>Regime</label><select value={formData.regime_embarque} onChange={e => updateField("regime_embarque", e.target.value)} className={inputClasses}><option value="14x14">14x14</option><option value="21x21">21x21</option><option value="28x28">28x28</option></select></div>
-            <div><label className={labelClasses}>Objetivo</label><select value={formData.meta_principal} onChange={e => updateField("meta_principal", e.target.value)} className={inputClasses}><option value="perda_peso">Perda de peso</option><option value="ganho_massa">Ganho de massa</option><option value="manutencao">Manutenção</option><option value="performance">Performance</option><option value="saude_geral">Saúde geral</option></select></div>
+            <div><label className={labelClasses}>Regime</label><select value={formData.regime_embarque} onChange={e => updateField("regime_embarque", e.target.value)} className={inputClasses}><option value="14x14">14x14</option><option value="14x21">14x21</option><option value="21x21">21x21</option><option value="28x28">28x28</option></select></div>
+            <div><label className={labelClasses}>Objetivo</label><select value={formData.meta_principal} onChange={e => updateField("meta_principal", e.target.value)} className={inputClasses}><option value="perda_peso">Perda de peso</option><option value="ganho_massa">Ganho de massa</option><option value="manutencao">Manutencao</option><option value="performance">Performance</option><option value="saude_geral">Saude geral</option></select></div>
           </div>
+
+          {/* LGPD Consent */}
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              required
+              className="mt-1"
+              checked={consent}
+              onChange={e => setConsent(e.target.checked)}
+            />
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              Li e concordo com a <a href="/privacidade" className="text-ocean-600 dark:text-ocean-400 underline">Politica de Privacidade</a>.
+              Autorizo o tratamento dos meus dados de saude conforme a LGPD.
+            </span>
+          </label>
+
           <button
             type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-ocean-600 text-white rounded-xl font-semibold hover:bg-ocean-500 transition-colors disabled:bg-slate-300 disabled:cursor-not-allowed"
+            disabled={loading || !consent}
+            className="w-full py-3 bg-ocean-600 text-white rounded-xl font-semibold hover:bg-ocean-500 transition-colors disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed"
           >
             {loading ? "Cadastrando..." : "Cadastrar Colaborador"}
           </button>

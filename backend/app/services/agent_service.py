@@ -26,13 +26,88 @@ class AgentService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.client = openai.OpenAI(
+        self.client = openai.AsyncOpenAI(
             base_url=settings.OPENROUTER_BASE_URL,
             api_key=settings.OPENROUTER_API_KEY,
         )
         self.tools_handler = ToolsHandler(db)
         self.model = settings.OPENROUTER_MODEL
         self.max_tool_rounds = 8
+
+    def _trim_messages(self, messages: list, max_tokens: int = 12000) -> list:
+        """Token-aware sliding window: trims conversation history to stay under max_tokens.
+
+        Always keeps the system message (index 0) and the last user message.
+        Estimates tokens as len(text) / 4 per message content.
+        Removes oldest non-system messages until total is under limit.
+        """
+        def estimate_tokens(msg: dict) -> int:
+            content = msg.get("content", "") or ""
+            # Also count tool_calls arguments if present
+            tool_calls = msg.get("tool_calls", [])
+            extra = ""
+            if tool_calls:
+                for tc in tool_calls:
+                    func = tc.get("function", {})
+                    extra += func.get("arguments", "")
+                    extra += func.get("name", "")
+            return int((len(content) + len(extra)) / 4)
+
+        total = sum(estimate_tokens(m) for m in messages)
+        if total <= max_tokens:
+            return messages
+
+        logger.warning(
+            f"Trimming conversation history: {total} estimated tokens > {max_tokens} limit, "
+            f"{len(messages)} messages"
+        )
+
+        # Always keep system message (first) and last user message
+        system_msg = messages[0] if messages and messages[0].get("role") == "system" else None
+        last_user_idx = None
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") == "user":
+                last_user_idx = i
+                break
+
+        # Build trimmed list: start removing from oldest non-system messages
+        # Keep system + as many recent messages as fit + last user message
+        trimmed = []
+        if system_msg:
+            trimmed.append(system_msg)
+
+        # Work backwards from the end, adding messages until we hit the limit
+        reserved_tokens = estimate_tokens(system_msg) if system_msg else 0
+        remaining_budget = max_tokens - reserved_tokens
+
+        # Collect messages from newest to oldest (excluding system)
+        candidates = messages[1:]  # everything after system
+        kept_from_end = []
+
+        for msg in reversed(candidates):
+            msg_tokens = estimate_tokens(msg)
+            if remaining_budget - msg_tokens >= 0:
+                kept_from_end.append(msg)
+                remaining_budget -= msg_tokens
+            else:
+                break
+
+        # Reverse to restore chronological order
+        kept_from_end.reverse()
+
+        # Ensure last user message is included
+        if last_user_idx is not None:
+            last_user_msg = messages[last_user_idx]
+            if last_user_msg not in kept_from_end:
+                kept_from_end.append(last_user_msg)
+
+        trimmed.extend(kept_from_end)
+
+        logger.info(
+            f"Trimmed from {len(messages)} to {len(trimmed)} messages "
+            f"(~{sum(estimate_tokens(m) for m in trimmed)} tokens)"
+        )
+        return trimmed
 
     async def processar_mensagem(
         self,
@@ -41,6 +116,9 @@ class AgentService:
         conversa_id: Optional[str] = None,
     ) -> dict:
         """Processa mensagem do colaborador e retorna resposta do agente"""
+
+        # Enforce authorization: tool calls can only access this colaborador's data
+        self.tools_handler.set_authorized_user(colaborador_id)
 
         conversa = None
         messages = [
@@ -59,12 +137,16 @@ class AgentService:
         resposta_final = ""
 
         for round_num in range(self.max_tool_rounds):
+            # Trim messages before each LLM call
+            trimmed_messages = self._trim_messages(messages)
+
             try:
-                response = self.client.chat.completions.create(
+                response = await self.client.chat.completions.create(
                     model=self.model,
                     max_tokens=8192,
-                    messages=messages,
+                    messages=trimmed_messages,
                     tools=TOOLS,
+                    timeout=60.0,
                     extra_headers={
                         "HTTP-Referer": "https://nutrioffshore.ai",
                         "X-Title": "NutriOffshore AI Agent",
@@ -125,13 +207,18 @@ class AgentService:
         if not resposta_final:
             logger.info("No text response after tool rounds, forcing final synthesis call")
             messages.append({"role": "user", "content": "Com base nas informacoes coletadas, responda de forma objetiva e concisa."})
+
+            # Trim before final call
+            trimmed_messages = self._trim_messages(messages)
+
             try:
-                final_response = self.client.chat.completions.create(
+                final_response = await self.client.chat.completions.create(
                     model=self.model,
                     max_tokens=8192,
-                    messages=messages,
+                    messages=trimmed_messages,
                     tools=TOOLS,
                     tool_choice="none",
+                    timeout=60.0,
                     extra_headers={
                         "HTTP-Referer": "https://nutrioffshore.ai",
                         "X-Title": "NutriOffshore AI Agent",
@@ -178,6 +265,10 @@ class AgentService:
     ) -> AsyncGenerator[dict, None]:
         """Processa mensagem com streaming de resposta"""
 
+        # Enforce authorization: tool calls can only access this colaborador's data
+        self.tools_handler.set_authorized_user(colaborador_id)
+
+        conversa = None
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT.format(colaborador_id=colaborador_id)}
         ]
@@ -191,6 +282,7 @@ class AgentService:
         messages.append({"role": "user", "content": mensagem})
 
         had_text = False
+        total_tokens = 0
         try:
             for round_num in range(self.max_tool_rounds):
                 collected_text = ""
@@ -198,13 +290,17 @@ class AgentService:
 
                 logger.info(f"Stream round {round_num}: calling LLM with {len(messages)} messages")
 
+                # Trim messages before each LLM call
+                trimmed_messages = self._trim_messages(messages)
+
                 try:
-                    stream = self.client.chat.completions.create(
+                    stream = await self.client.chat.completions.create(
                         model=self.model,
                         max_tokens=4096,
-                        messages=messages,
+                        messages=trimmed_messages,
                         tools=TOOLS,
                         stream=True,
+                        timeout=60.0,
                         extra_headers={
                             "HTTP-Referer": "https://nutrioffshore.ai",
                             "X-Title": "NutriOffshore AI Agent",
@@ -216,7 +312,7 @@ class AgentService:
                     yield {"type": "error", "content": error_msg}
                     return
 
-                for chunk in stream:
+                async for chunk in stream:
                     if not chunk.choices:
                         continue
                     delta = chunk.choices[0].delta
@@ -286,18 +382,23 @@ class AgentService:
             if not had_text:
                 logger.info("Stream: no text after tool rounds, forcing synthesis call")
                 messages.append({"role": "user", "content": "Com base nas informações coletadas pelas ferramentas, responda ao pedido do colaborador de forma completa e detalhada."})
+
+                # Trim before synthesis call
+                trimmed_messages = self._trim_messages(messages)
+
                 try:
-                    stream = self.client.chat.completions.create(
+                    stream = await self.client.chat.completions.create(
                         model=self.model,
                         max_tokens=4096,
-                        messages=messages,
+                        messages=trimmed_messages,
                         stream=True,
+                        timeout=60.0,
                         extra_headers={
                             "HTTP-Referer": "https://nutrioffshore.ai",
                             "X-Title": "NutriOffshore AI Agent",
                         },
                     )
-                    for chunk in stream:
+                    async for chunk in stream:
                         if not chunk.choices:
                             continue
                         delta = chunk.choices[0].delta
@@ -313,6 +414,28 @@ class AgentService:
         except Exception as e:
             logger.error(f"Erro inesperado no streaming: {e}", exc_info=True)
             yield {"type": "error", "content": f"Erro inesperado: {str(e)[:200]}"}
+
+        # Save streaming conversation to database
+        try:
+            messages_to_save = self._simplificar_mensagens(messages)
+
+            if conversa:
+                conversa.messages = messages_to_save
+                conversa.tokens_utilizados = (conversa.tokens_utilizados or 0) + total_tokens
+                conversa.updated_at = datetime.utcnow()
+            else:
+                conversa = ConversaAgente(
+                    id=uuid4(),
+                    colaborador_id=colaborador_id,
+                    messages=messages_to_save,
+                    tokens_utilizados=total_tokens,
+                )
+                self.db.add(conversa)
+
+            await self.db.commit()
+            yield {"type": "done", "conversa_id": str(conversa.id)}
+        except Exception as e:
+            logger.error(f"Erro ao salvar conversa streaming: {e}", exc_info=True)
 
     async def listar_conversas(self, colaborador_id: str, limit: int = 10) -> list:
         """Lista conversas do colaborador"""

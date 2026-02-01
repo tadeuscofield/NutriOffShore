@@ -8,8 +8,8 @@ from app.database import Base
 class RefeicaoLog(Base):
     __tablename__ = "refeicoes_log"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    colaborador_id = Column(UUID(as_uuid=True), ForeignKey("colaboradores.id"), nullable=False)
-    plano_id = Column(UUID(as_uuid=True), ForeignKey("planos_nutricionais.id"))
+    colaborador_id = Column(UUID(as_uuid=True), ForeignKey("colaboradores.id"), nullable=False, index=True)
+    plano_id = Column(UUID(as_uuid=True), ForeignKey("planos_nutricionais.id"), index=True)
     data = Column(Date, nullable=False)
     refeicao = Column(String(20), nullable=False)
     itens_consumidos = Column(JSONB, nullable=False)

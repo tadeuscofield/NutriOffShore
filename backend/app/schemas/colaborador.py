@@ -1,44 +1,45 @@
 from pydantic import BaseModel, Field
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 from uuid import UUID
 
 class ColaboradorBase(BaseModel):
     matricula: str = Field(..., max_length=20)
     nome: str = Field(..., max_length=100)
     data_nascimento: date
-    sexo: str = Field(..., pattern="^[MF]$")
-    altura_cm: Optional[float] = None
+    sexo: Literal["M", "F"]
+    altura_cm: Optional[float] = Field(None, gt=50, lt=280)
     cargo: Optional[str] = None
-    nivel_atividade: Optional[str] = "moderado"
-    turno_atual: Optional[str] = "diurno"
-    regime_embarque: Optional[str] = "14x14"
-    meta_principal: Optional[str] = "saude_geral"
+    nivel_atividade: Literal["sedentario", "leve", "moderado", "intenso", "muito_intenso"] = "moderado"
+    turno_atual: Literal["diurno", "noturno"] = "diurno"
+    regime_embarque: Literal["14x14", "14x21", "21x21", "28x28"] = "14x14"
+    meta_principal: Literal["perda_peso", "ganho_massa", "manutencao", "saude_geral", "performance"] = "saude_geral"
 
 class ColaboradorCreate(ColaboradorBase):
     pass
 
 class ColaboradorUpdate(BaseModel):
     nome: Optional[str] = None
-    altura_cm: Optional[float] = None
+    altura_cm: Optional[float] = Field(None, gt=50, lt=280)
     cargo: Optional[str] = None
-    nivel_atividade: Optional[str] = None
-    turno_atual: Optional[str] = None
-    regime_embarque: Optional[str] = None
-    meta_principal: Optional[str] = None
+    nivel_atividade: Optional[Literal["sedentario", "leve", "moderado", "intenso", "muito_intenso"]] = None
+    turno_atual: Optional[Literal["diurno", "noturno"]] = None
+    regime_embarque: Optional[Literal["14x14", "14x21", "21x21", "28x28"]] = None
+    meta_principal: Optional[Literal["perda_peso", "ganho_massa", "manutencao", "saude_geral", "performance"]] = None
+    sexo: Optional[Literal["M", "F"]] = None
 
 class MedicaoSchema(BaseModel):
     data_medicao: date
-    peso_kg: Optional[float] = None
-    circunferencia_abdominal_cm: Optional[float] = None
-    percentual_gordura: Optional[float] = None
-    pressao_sistolica: Optional[int] = None
-    pressao_diastolica: Optional[int] = None
-    glicemia_jejum: Optional[float] = None
-    colesterol_total: Optional[float] = None
-    hdl: Optional[float] = None
-    ldl: Optional[float] = None
-    triglicerides: Optional[float] = None
+    peso_kg: float = Field(..., gt=20, lt=400)
+    circunferencia_abdominal_cm: Optional[float] = Field(None, gt=30, lt=250)
+    percentual_gordura: Optional[float] = Field(None, ge=1, le=70)
+    pressao_sistolica: Optional[int] = Field(None, gt=50, lt=300)
+    pressao_diastolica: Optional[int] = Field(None, gt=30, lt=200)
+    glicemia_jejum: Optional[float] = Field(None, gt=20, lt=600)
+    colesterol_total: Optional[float] = Field(None, gt=50, lt=500)
+    hdl: Optional[float] = Field(None, gt=10, lt=200)
+    ldl: Optional[float] = Field(None, gt=10, lt=400)
+    triglicerides: Optional[float] = Field(None, gt=10, lt=1000)
     fonte: Optional[str] = "auto_relato"
 
 class CondicaoSaudeSchema(BaseModel):

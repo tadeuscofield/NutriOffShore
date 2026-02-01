@@ -6,6 +6,7 @@ from uuid import UUID
 from datetime import date, timedelta
 
 from app.database import get_db
+from app.auth import get_current_user
 from app.models.refeicao_log import RefeicaoLog
 from app.schemas.refeicao import RefeicaoLogCreate, RefeicaoLogResponse, ResumoDiario
 
@@ -13,7 +14,11 @@ router = APIRouter()
 
 
 @router.post("/", response_model=RefeicaoLogResponse, status_code=201)
-async def registrar_refeicao(data: RefeicaoLogCreate, db: AsyncSession = Depends(get_db)):
+async def registrar_refeicao(
+    data: RefeicaoLogCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     log = RefeicaoLog(
         colaborador_id=data.colaborador_id,
         plano_id=data.plano_id,
@@ -37,7 +42,10 @@ async def registrar_refeicao(data: RefeicaoLogCreate, db: AsyncSession = Depends
 
 @router.get("/colaborador/{colaborador_id}/dia/{data_str}")
 async def refeicoes_do_dia(
-    colaborador_id: UUID, data_str: str, db: AsyncSession = Depends(get_db)
+    colaborador_id: UUID,
+    data_str: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     data_ref = date.fromisoformat(data_str)
     stmt = (
@@ -75,7 +83,11 @@ async def refeicoes_do_dia(
 
 
 @router.get("/colaborador/{colaborador_id}/resumo-semanal")
-async def resumo_semanal(colaborador_id: UUID, db: AsyncSession = Depends(get_db)):
+async def resumo_semanal(
+    colaborador_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     hoje = date.today()
     inicio = hoje - timedelta(days=6)
 

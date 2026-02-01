@@ -8,7 +8,7 @@ from app.database import Base
 class AlertaMedico(Base):
     __tablename__ = "alertas_medicos"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    colaborador_id = Column(UUID(as_uuid=True), ForeignKey("colaboradores.id"), nullable=False)
+    colaborador_id = Column(UUID(as_uuid=True), ForeignKey("colaboradores.id"), nullable=False, index=True)
     tipo = Column(String(20), nullable=False)
     motivo = Column(Text, nullable=False)
     recomendacao = Column(Text)

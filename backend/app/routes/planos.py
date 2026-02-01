@@ -5,6 +5,7 @@ from sqlalchemy import select, and_
 from uuid import UUID
 
 from app.database import get_db
+from app.auth import get_current_user
 from app.models.plano_nutricional import PlanoNutricional
 from app.schemas.plano import PlanoCreate, PlanoUpdate, PlanoResponse
 
@@ -12,7 +13,11 @@ router = APIRouter()
 
 
 @router.post("/", response_model=PlanoResponse, status_code=201)
-async def criar_plano(data: PlanoCreate, db: AsyncSession = Depends(get_db)):
+async def criar_plano(
+    data: PlanoCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     # Desativar planos anteriores do colaborador
     stmt = select(PlanoNutricional).where(
         and_(PlanoNutricional.colaborador_id == data.colaborador_id, PlanoNutricional.ativo == True)
@@ -29,7 +34,11 @@ async def criar_plano(data: PlanoCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/colaborador/{colaborador_id}", response_model=list[PlanoResponse])
-async def listar_planos_colaborador(colaborador_id: UUID, db: AsyncSession = Depends(get_db)):
+async def listar_planos_colaborador(
+    colaborador_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     stmt = (
         select(PlanoNutricional)
         .where(PlanoNutricional.colaborador_id == colaborador_id)
@@ -40,7 +49,11 @@ async def listar_planos_colaborador(colaborador_id: UUID, db: AsyncSession = Dep
 
 
 @router.get("/colaborador/{colaborador_id}/ativo", response_model=PlanoResponse)
-async def plano_ativo(colaborador_id: UUID, db: AsyncSession = Depends(get_db)):
+async def plano_ativo(
+    colaborador_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     stmt = select(PlanoNutricional).where(
         and_(PlanoNutricional.colaborador_id == colaborador_id, PlanoNutricional.ativo == True)
     )
@@ -52,7 +65,12 @@ async def plano_ativo(colaborador_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.put("/{plano_id}", response_model=PlanoResponse)
-async def atualizar_plano(plano_id: UUID, data: PlanoUpdate, db: AsyncSession = Depends(get_db)):
+async def atualizar_plano(
+    plano_id: UUID,
+    data: PlanoUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     stmt = select(PlanoNutricional).where(PlanoNutricional.id == plano_id)
     result = await db.execute(stmt)
     plano = result.scalar_one_or_none()
@@ -68,7 +86,11 @@ async def atualizar_plano(plano_id: UUID, data: PlanoUpdate, db: AsyncSession = 
 
 
 @router.delete("/{plano_id}", status_code=204)
-async def deletar_plano(plano_id: UUID, db: AsyncSession = Depends(get_db)):
+async def deletar_plano(
+    plano_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     stmt = select(PlanoNutricional).where(PlanoNutricional.id == plano_id)
     result = await db.execute(stmt)
     plano = result.scalar_one_or_none()

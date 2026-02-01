@@ -1,7 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.rate_limit import limiter
 from app.routes import colaboradores, planos, cardapios, refeicoes, chat, alertas
+from app.routes import auth as auth_routes
 from app.database import init_db
+from app.config import get_settings
 from app.logging_config import setup_logging
 import logging
 import time
@@ -16,9 +21,19 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+_settings = get_settings()
+_cors_origins = [
+    origin.strip()
+    for origin in _settings.CORS_ORIGINS.split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -78,6 +93,7 @@ async def request_logging_middleware(request: Request, call_next):
         raise
 
 
+app.include_router(auth_routes.router, prefix="/api/v1/auth", tags=["Autenticacao"])
 app.include_router(colaboradores.router, prefix="/api/v1/colaboradores", tags=["Colaboradores"])
 app.include_router(planos.router, prefix="/api/v1/planos", tags=["Planos Nutricionais"])
 app.include_router(cardapios.router, prefix="/api/v1/cardapios", tags=["Cardápios"])
@@ -93,5 +109,6 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup():
+    _settings.validate_settings()
     await init_db()
     logger.info("NutriOffshore AI Backend started successfully")

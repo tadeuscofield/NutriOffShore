@@ -1,5 +1,5 @@
 """Rotas de Chat com Agente AI NutriOffshore"""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
@@ -9,7 +9,9 @@ import json
 import logging
 
 from app.database import get_db
+from app.auth import get_current_user
 from app.services.agent_service import AgentService
+from app.rate_limit import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +30,22 @@ class ChatResponse(BaseModel):
     tokens_utilizados: Optional[int] = None
 
 
+def _verify_colaborador_ownership(data: ChatMessage, current_user: dict) -> None:
+    """Verifica se o colaborador_id da mensagem pertence ao usuario autenticado."""
+    if str(data.colaborador_id) != current_user["sub"]:
+        raise HTTPException(status_code=403, detail="Acesso negado: colaborador_id nao corresponde ao usuario autenticado")
+
+
 @router.post("/mensagem", response_model=ChatResponse)
-async def enviar_mensagem(data: ChatMessage, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def enviar_mensagem(
+    request: Request,
+    data: ChatMessage,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Envia mensagem para o agente NutriOffshore e recebe resposta"""
+    _verify_colaborador_ownership(data, current_user)
     try:
         agent = AgentService(db)
         resultado = await agent.processar_mensagem(
@@ -43,14 +58,23 @@ async def enviar_mensagem(data: ChatMessage, db: AsyncSession = Depends(get_db))
             conversa_id=resultado["conversa_id"],
             tokens_utilizados=resultado.get("tokens"),
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Erro no chat: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro ao processar mensagem: {str(e)}")
+        logger.error(f"Erro no chat: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Erro interno ao processar mensagem")
 
 
 @router.post("/mensagem/stream")
-async def enviar_mensagem_stream(data: ChatMessage, db: AsyncSession = Depends(get_db)):
+@limiter.limit("10/minute")
+async def enviar_mensagem_stream(
+    request: Request,
+    data: ChatMessage,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Envia mensagem com resposta em streaming"""
+    _verify_colaborador_ownership(data, current_user)
     agent = AgentService(db)
 
     async def generate():
@@ -63,7 +87,7 @@ async def enviar_mensagem_stream(data: ChatMessage, db: AsyncSession = Depends(g
                 yield f"data: {json.dumps(chunk, ensure_ascii=False)}\n\n"
         except Exception as e:
             logger.error(f"Erro no streaming: {e}", exc_info=True)
-            error_payload = {"type": "error", "content": f"Erro no servidor: {str(e)[:200]}"}
+            error_payload = {"type": "error", "content": "Erro interno ao processar mensagem"}
             yield f"data: {json.dumps(error_payload, ensure_ascii=False)}\n\n"
         yield "data: [DONE]\n\n"
 
@@ -71,14 +95,29 @@ async def enviar_mensagem_stream(data: ChatMessage, db: AsyncSession = Depends(g
 
 
 @router.get("/historico/{colaborador_id}")
-async def historico_conversas(colaborador_id: UUID, limit: int = 10, db: AsyncSession = Depends(get_db)):
+@limiter.limit("60/minute")
+async def historico_conversas(
+    request: Request,
+    colaborador_id: UUID,
+    limit: int = 10,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Lista conversas anteriores do colaborador"""
+    if str(colaborador_id) != current_user["sub"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
     agent = AgentService(db)
     return await agent.listar_conversas(str(colaborador_id), limit)
 
 
 @router.get("/conversa/{conversa_id}")
-async def buscar_conversa(conversa_id: UUID, db: AsyncSession = Depends(get_db)):
+@limiter.limit("60/minute")
+async def buscar_conversa(
+    request: Request,
+    conversa_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """Busca uma conversa específica"""
     agent = AgentService(db)
     conversa = await agent.buscar_conversa(str(conversa_id))

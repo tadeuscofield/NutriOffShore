@@ -6,13 +6,19 @@ from uuid import UUID
 from datetime import datetime
 
 from app.database import get_db
+from app.auth import get_current_user
 from app.models.alerta_medico import AlertaMedico
 
 router = APIRouter()
 
 
 @router.get("/")
-async def listar_alertas(status: str = "aberto", limit: int = 50, db: AsyncSession = Depends(get_db)):
+async def listar_alertas(
+    status: str = "aberto",
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     stmt = (
         select(AlertaMedico)
         .where(AlertaMedico.status == status)
@@ -36,7 +42,11 @@ async def listar_alertas(status: str = "aberto", limit: int = 50, db: AsyncSessi
 
 
 @router.get("/colaborador/{colaborador_id}")
-async def alertas_colaborador(colaborador_id: UUID, db: AsyncSession = Depends(get_db)):
+async def alertas_colaborador(
+    colaborador_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     stmt = (
         select(AlertaMedico)
         .where(AlertaMedico.colaborador_id == colaborador_id)
@@ -47,7 +57,12 @@ async def alertas_colaborador(colaborador_id: UUID, db: AsyncSession = Depends(g
 
 
 @router.put("/{alerta_id}/visualizar")
-async def marcar_visualizado(alerta_id: UUID, visualizado_por: str, db: AsyncSession = Depends(get_db)):
+async def marcar_visualizado(
+    alerta_id: UUID,
+    visualizado_por: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     stmt = select(AlertaMedico).where(AlertaMedico.id == alerta_id)
     result = await db.execute(stmt)
     alerta = result.scalar_one_or_none()
@@ -62,7 +77,12 @@ async def marcar_visualizado(alerta_id: UUID, visualizado_por: str, db: AsyncSes
 
 
 @router.put("/{alerta_id}/resolver")
-async def resolver_alerta(alerta_id: UUID, visualizado_por: str, db: AsyncSession = Depends(get_db)):
+async def resolver_alerta(
+    alerta_id: UUID,
+    visualizado_por: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     stmt = select(AlertaMedico).where(AlertaMedico.id == alerta_id)
     result = await db.execute(stmt)
     alerta = result.scalar_one_or_none()

@@ -28,8 +28,25 @@ logger = logging.getLogger(__name__)
 class ToolsHandler:
     """Processa tool calls do agente Claude"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, authorized_colaborador_id: Optional[str] = None):
         self.db = db
+        self.authorized_colaborador_id = authorized_colaborador_id
+
+    def set_authorized_user(self, colaborador_id: str) -> None:
+        """Define o colaborador_id autorizado para esta sessao de tools."""
+        self.authorized_colaborador_id = colaborador_id
+
+    def _check_colaborador_authorization(self, colaborador_id: str) -> Optional[str]:
+        """Verifica se o colaborador_id corresponde ao usuario autorizado.
+        Retorna mensagem de erro JSON se nao autorizado, None se OK.
+        """
+        if self.authorized_colaborador_id and str(colaborador_id) != str(self.authorized_colaborador_id):
+            logger.warning(
+                f"Tentativa de acesso nao autorizado: tool pediu colaborador_id={colaborador_id}, "
+                f"autorizado={self.authorized_colaborador_id}"
+            )
+            return json.dumps({"error": "Acesso negado: colaborador_id nao autorizado"})
+        return None
 
     async def handle_tool_call(self, tool_name: str, tool_input: dict) -> str:
         handlers = {
@@ -48,12 +65,20 @@ class ToolsHandler:
         handler = handlers.get(tool_name)
         if not handler:
             return json.dumps({"error": "Tool " + tool_name + " não reconhecida"})
+
+        # Verificar autorizacao para tools que recebem colaborador_id
+        colaborador_id = tool_input.get("colaborador_id")
+        if colaborador_id:
+            auth_error = self._check_colaborador_authorization(colaborador_id)
+            if auth_error:
+                return auth_error
+
         try:
             result = await handler(tool_input)
             return json.dumps(result, default=str, ensure_ascii=False)
         except Exception as e:
-            logger.error(f"Erro executando tool {tool_name}: {e}")
-            return json.dumps({"error": str(e)})
+            logger.error(f"Erro executando tool {tool_name}: {e}", exc_info=True)
+            return json.dumps({"error": "Erro ao executar operação"})
 
     async def _get_colaborador_profile(self, params: dict) -> dict:
         colaborador_id = params.get("colaborador_id")
@@ -108,6 +133,11 @@ class ToolsHandler:
     async def _save_plano_nutricional(self, params: dict) -> dict:
         plano_data = params.get("plano", params)
         colaborador_id = params.get("colaborador_id") or plano_data.get("colaborador_id")
+        # Verificar autorizacao para colaborador_id aninhado
+        if colaborador_id:
+            auth_error = self._check_colaborador_authorization(colaborador_id)
+            if auth_error:
+                return json.loads(auth_error)
         stmt = select(PlanoNutricional).where(and_(PlanoNutricional.colaborador_id == colaborador_id, PlanoNutricional.ativo == True))
         result = await self.db.execute(stmt)
         planos_antigos = result.scalars().all()
@@ -181,4 +211,3 @@ class ToolsHandler:
         perfil = PerfilNutricional(peso_kg=params["peso_kg"], altura_cm=params["altura_cm"], idade=idade, sexo=params["sexo"], nivel_atividade=params["nivel_atividade"], turno=params.get("turno", "diurno"), objetivo=objetivo, percentual_gordura=params.get("percentual_gordura"), cargo=params.get("cargo"))
         resultado = NutriCalculator.calcular_completo(perfil)
         return {"tmb": resultado.tmb_utilizada, "formula": resultado.formula_escolhida, "get_total": resultado.get_total, "meta_calorica": resultado.meta_calorica, "macros": {"proteina_g": resultado.proteina_g, "carboidratos_g": resultado.carboidratos_g, "gorduras_g": resultado.gorduras_g}, "percentuais": {"proteina": resultado.proteina_pct, "carboidratos": resultado.carboidratos_pct, "gorduras": resultado.gorduras_pct}, "hidratacao_ml": resultado.agua_ml, "fibra_g": resultado.fibra_g, "imc": resultado.imc, "classificacao_imc": resultado.classificacao_imc, "relatorio_formatado": NutriCalculator.formatar_relatorio(resultado)}
-

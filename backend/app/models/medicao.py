@@ -8,7 +8,7 @@ from app.database import Base
 class Medicao(Base):
     __tablename__ = "medicoes"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    colaborador_id = Column(UUID(as_uuid=True), ForeignKey("colaboradores.id"), nullable=False)
+    colaborador_id = Column(UUID(as_uuid=True), ForeignKey("colaboradores.id"), nullable=False, index=True)
     data_medicao = Column(Date, nullable=False)
     peso_kg = Column(Numeric(5, 2))
     circunferencia_abdominal_cm = Column(Numeric(5, 2))
