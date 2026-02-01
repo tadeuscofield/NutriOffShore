@@ -10,7 +10,7 @@ class PlanoCreate(BaseModel):
     carboidratos_g: float = Field(..., gt=0, lt=2000)
     gorduras_g: float = Field(..., gt=0, lt=500)
     objetivo: Optional[str] = None
-    refeicoes_detalhadas: Optional[list] = None
+    refeicoes_detalhadas: Optional[Any] = None
     suplementacao: Optional[Any] = None
     observacoes: Optional[str] = None
     data_inicio: date
@@ -33,9 +33,9 @@ class PlanoResponse(BaseModel):
     proteina_g: int
     carboidratos_g: int
     gorduras_g: int
-    objetivo: Optional[str]
-    refeicoes_detalhadas: Optional[list] = None
-    suplementacao: Optional[Any]
+    objetivo: Optional[str] = None
+    refeicoes_detalhadas: Optional[Any] = None
+    suplementacao: Optional[Any] = None
     observacoes: Optional[str]
     data_inicio: date
     data_fim: Optional[date]
