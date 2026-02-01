@@ -190,10 +190,13 @@ class AgentService:
 
         messages.append({"role": "user", "content": mensagem})
 
+        had_text = False
         try:
             for round_num in range(self.max_tool_rounds):
                 collected_text = ""
                 collected_tool_calls = {}
+
+                logger.info(f"Stream round {round_num}: calling LLM with {len(messages)} messages")
 
                 try:
                     stream = self.client.chat.completions.create(
@@ -241,6 +244,11 @@ class AgentService:
                                 if tc_delta.function.arguments:
                                     collected_tool_calls[idx]["arguments"] += tc_delta.function.arguments
 
+                logger.info(f"Stream round {round_num}: text_len={len(collected_text)}, tool_calls={len(collected_tool_calls)}")
+
+                if collected_text:
+                    had_text = True
+
                 # Build assistant message
                 msg_dict = {"role": "assistant", "content": collected_text}
                 if collected_tool_calls:
@@ -273,6 +281,35 @@ class AgentService:
                         "tool_call_id": tc["id"],
                         "content": result if isinstance(result, str) else json.dumps(result, default=str, ensure_ascii=False),
                     })
+
+            # Force synthesis if tools ran but no text was generated
+            if not had_text:
+                logger.info("Stream: no text after tool rounds, forcing synthesis call")
+                messages.append({"role": "user", "content": "Com base nas informações coletadas pelas ferramentas, responda ao pedido do colaborador de forma completa e detalhada."})
+                try:
+                    stream = self.client.chat.completions.create(
+                        model=self.model,
+                        max_tokens=4096,
+                        messages=messages,
+                        stream=True,
+                        extra_headers={
+                            "HTTP-Referer": "https://nutrioffshore.ai",
+                            "X-Title": "NutriOffshore AI Agent",
+                        },
+                    )
+                    for chunk in stream:
+                        if not chunk.choices:
+                            continue
+                        delta = chunk.choices[0].delta
+                        if delta.content:
+                            had_text = True
+                            yield {"type": "text", "content": delta.content}
+                except Exception as e:
+                    logger.error(f"Erro na síntese final streaming: {e}")
+
+            if not had_text:
+                yield {"type": "text", "content": "Desculpe, não consegui gerar uma resposta. Por favor, tente novamente com uma pergunta mais simples."}
+
         except Exception as e:
             logger.error(f"Erro inesperado no streaming: {e}", exc_info=True)
             yield {"type": "error", "content": f"Erro inesperado: {str(e)[:200]}"}
