@@ -3,7 +3,7 @@ from datetime import date, datetime
 from typing import Optional, List, Literal
 from uuid import UUID
 
-class ColaboradorBase(BaseModel):
+class ColaboradorCreate(BaseModel):
     matricula: str = Field(..., max_length=20)
     nome: str = Field(..., max_length=100)
     data_nascimento: date
@@ -13,10 +13,7 @@ class ColaboradorBase(BaseModel):
     nivel_atividade: Literal["sedentario", "leve", "moderado", "intenso", "muito_intenso"] = "moderado"
     turno_atual: Literal["diurno", "noturno"] = "diurno"
     regime_embarque: Literal["14x14", "14x21", "21x21", "28x28"] = "14x14"
-    meta_principal: Literal["perda_peso", "ganho_massa", "manutencao", "saude_geral", "performance"] = "saude_geral"
-
-class ColaboradorCreate(ColaboradorBase):
-    pass
+    meta_principal: Literal["perda_peso", "perda_gordura", "ganho_massa", "manutencao", "saude_geral", "performance"] = "saude_geral"
 
 class ColaboradorUpdate(BaseModel):
     nome: Optional[str] = None
@@ -25,7 +22,7 @@ class ColaboradorUpdate(BaseModel):
     nivel_atividade: Optional[Literal["sedentario", "leve", "moderado", "intenso", "muito_intenso"]] = None
     turno_atual: Optional[Literal["diurno", "noturno"]] = None
     regime_embarque: Optional[Literal["14x14", "14x21", "21x21", "28x28"]] = None
-    meta_principal: Optional[Literal["perda_peso", "ganho_massa", "manutencao", "saude_geral", "performance"]] = None
+    meta_principal: Optional[Literal["perda_peso", "perda_gordura", "ganho_massa", "manutencao", "saude_geral", "performance"]] = None
     sexo: Optional[Literal["M", "F"]] = None
 
 class MedicaoSchema(BaseModel):
@@ -54,8 +51,19 @@ class PreferenciaSchema(BaseModel):
     item: str
     severidade: Optional[str] = None
 
-class ColaboradorResponse(ColaboradorBase):
+class ColaboradorResponse(BaseModel):
+    """Response schema - uses str for enum fields to tolerate existing DB data."""
     id: UUID
+    matricula: str
+    nome: str
+    data_nascimento: date
+    sexo: str
+    altura_cm: Optional[float] = None
+    cargo: Optional[str] = None
+    nivel_atividade: str = "moderado"
+    turno_atual: str = "diurno"
+    regime_embarque: str = "14x14"
+    meta_principal: str = "saude_geral"
     created_at: datetime
     updated_at: datetime
     class Config:
