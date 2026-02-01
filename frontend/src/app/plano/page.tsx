@@ -100,11 +100,14 @@ export default function PlanoPage() {
     }
   }
 
+  function getRefeicoes(p: Plano) {
+    if (Array.isArray(p.refeicoes_detalhadas)) return p.refeicoes_detalhadas;
+    return refeicoesPadrao.map(r => ({ ...r, cal: Math.round(p.meta_calorica * r.pct) }));
+  }
+
   function downloadPlano() {
     if (!plano) return;
-    const refeicoes = plano.refeicoes_detalhadas || refeicoesPadrao.map(r => ({
-      ...r, cal: Math.round(plano.meta_calorica * r.pct),
-    }));
+    const refeicoes = getRefeicoes(plano);
 
     const nome = colaborador?.nome || "Colaborador";
     const lines = [
@@ -295,7 +298,7 @@ export default function PlanoPage() {
             <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
               <h3 className="font-semibold text-slate-800 mb-4">Distribuição de Refeições</h3>
               <div className="space-y-4">
-                {(plano.refeicoes_detalhadas || refeicoesPadrao.map(r => ({ ...r, cal: Math.round(plano.meta_calorica * r.pct) }))).map((ref: any, i: number) => (
+                {getRefeicoes(plano).map((ref: any, i: number) => (
                   <div key={i} className="flex items-start gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
                     <div className="text-center min-w-[60px]">
                       <div className="text-sm font-mono text-slate-500">{ref.horario}</div>
