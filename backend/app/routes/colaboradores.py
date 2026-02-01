@@ -160,7 +160,27 @@ async def listar_medicoes(
         .limit(limit)
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    medicoes = result.scalars().all()
+    return [
+        {
+            "id": str(m.id),
+            "colaborador_id": str(m.colaborador_id),
+            "data_medicao": str(m.data_medicao),
+            "peso_kg": float(m.peso_kg) if m.peso_kg is not None else None,
+            "circunferencia_abdominal_cm": float(m.circunferencia_abdominal_cm) if m.circunferencia_abdominal_cm is not None else None,
+            "percentual_gordura": float(m.percentual_gordura) if m.percentual_gordura is not None else None,
+            "pressao_sistolica": m.pressao_sistolica,
+            "pressao_diastolica": m.pressao_diastolica,
+            "glicemia_jejum": float(m.glicemia_jejum) if m.glicemia_jejum is not None else None,
+            "colesterol_total": float(m.colesterol_total) if m.colesterol_total is not None else None,
+            "hdl": float(m.hdl) if m.hdl is not None else None,
+            "ldl": float(m.ldl) if m.ldl is not None else None,
+            "triglicerides": float(m.triglicerides) if m.triglicerides is not None else None,
+            "fonte": m.fonte,
+            "created_at": m.created_at.isoformat() if m.created_at else None,
+        }
+        for m in medicoes
+    ]
 
 
 @router.post("/{colaborador_id}/condicoes", status_code=201)

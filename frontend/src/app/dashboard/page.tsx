@@ -77,24 +77,17 @@ export default function DashboardPage() {
     setError(null);
 
     const results = await Promise.allSettled([
-      api.buscarColaborador(colaboradorId),
+      api.listarMedicoes(colaboradorId),
       api.planoAtivo(colaboradorId),
       api.listarRefeicoes(colaboradorId),
       api.listarAlertasColaborador(colaboradorId),
     ]);
 
-    // Medicoes from full collaborator response
+    // Medicoes
     if (results[0].status === "fulfilled") {
-      const fullColaborador = results[0].value;
-      setMedicoes(fullColaborador.medicoes || []);
+      setMedicoes(results[0].value || []);
     } else {
-      // Fallback: try direct medicoes endpoint
-      try {
-        const m = await api.listarMedicoes(colaboradorId);
-        setMedicoes(m || []);
-      } catch {
-        setMedicoes([]);
-      }
+      setMedicoes([]);
     }
 
     // Plano ativo
@@ -107,7 +100,32 @@ export default function DashboardPage() {
     // Resumo refeicoes
     if (results[2].status === "fulfilled") {
       const data = results[2].value;
-      setResumoRefeicoes(Array.isArray(data) ? data : (data as { dias?: ResumoRefeicao[] })?.dias || []);
+      if (Array.isArray(data)) {
+        setResumoRefeicoes(data);
+      } else if (data && typeof data === "object" && "dias" in data) {
+        // Backend returns {dias: {date_string: {calorias, proteina, ...}}} — convert to array
+        const dias = (data as Record<string, unknown>).dias;
+        if (Array.isArray(dias)) {
+          setResumoRefeicoes(dias);
+        } else if (dias && typeof dias === "object") {
+          const arr: ResumoRefeicao[] = Object.entries(dias as Record<string, Record<string, unknown>>).map(
+            ([dateStr, vals]) => ({
+              data: dateStr,
+              total_calorias: (vals.calorias as number) || 0,
+              total_proteina_g: (vals.proteina as number) || 0,
+              total_carboidratos_g: (vals.carbs as number) || 0,
+              total_gorduras_g: (vals.gordura as number) || 0,
+              refeicoes_registradas: (vals.refeicoes as number) || 0,
+              aderencia_media: (vals.aderencia_media as number) ?? null,
+            })
+          );
+          setResumoRefeicoes(arr);
+        } else {
+          setResumoRefeicoes([]);
+        }
+      } else {
+        setResumoRefeicoes([]);
+      }
     } else {
       setResumoRefeicoes([]);
     }
@@ -116,13 +134,7 @@ export default function DashboardPage() {
     if (results[3].status === "fulfilled") {
       setAlertas(results[3].value || []);
     } else {
-      // Fallback: try general alertas endpoint
-      try {
-        const a = await api.listarAlertas("aberto");
-        setAlertas(a || []);
-      } catch {
-        setAlertas([]);
-      }
+      setAlertas([]);
     }
 
     setLoading(false);

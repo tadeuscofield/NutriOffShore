@@ -53,7 +53,19 @@ async def alertas_colaborador(
         .order_by(AlertaMedico.created_at.desc())
     )
     result = await db.execute(stmt)
-    return result.scalars().all()
+    alertas = result.scalars().all()
+    return [
+        {
+            "id": str(a.id),
+            "colaborador_id": str(a.colaborador_id),
+            "tipo": a.tipo,
+            "motivo": a.motivo,
+            "recomendacao": a.recomendacao,
+            "status": a.status,
+            "created_at": a.created_at.isoformat() if a.created_at else None,
+        }
+        for a in alertas
+    ]
 
 
 @router.put("/{alerta_id}/visualizar")
