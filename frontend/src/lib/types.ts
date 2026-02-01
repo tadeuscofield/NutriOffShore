@@ -71,9 +71,13 @@ export interface PlanoNutricional {
   carboidratos_g: number;
   gorduras_g: number;
   objetivo: string | null;
+  refeicoes_detalhadas: any;
+  observacoes: string | null;
   ativo: boolean;
   data_inicio: string;
   data_fim: string | null;
+  created_by: string;
+  created_at: string;
 }
 
 export interface PlanoNutricionalUpdate {
